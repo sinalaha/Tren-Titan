@@ -126,6 +126,12 @@ npm run build
 - Rate limits for registration and AI routes (`src/services/*RateLimit.ts`), backed by Upstash when configured.
 - Cookie security: production uses secure cookies via Auth.js / NextAuth defaults; keep `NEXTAUTH_URL` on HTTPS in production.
 
+## GitHub Pages
+
+This app is full-stack (API routes, Auth.js, Prisma). **GitHub Pages only hosts the static export**: a small public shell (/, /login, /register, legal). The workflow [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) runs `npm run build:pages` (see `scripts/github-pages-prepare.mjs`), then publishes the `out/` directory via [GitHub Actions](https://docs.github.com/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site#publishing-with-a-custom-github-actions-workflow).
+
+Enable **Settings → Pages → Build and deployment → Source: GitHub Actions** on the repository.
+
 ## Vercel deployment
 
 1. Create a Vercel project from this GitHub repo.

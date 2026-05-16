@@ -9,6 +9,7 @@
     "dev": "next dev",
     "dev:clean": "node scripts/clean-next-cache.mjs && next dev",
     "build": "next build",
+    "build:pages": "node scripts/github-pages-prepare.mjs && next build",
     "start": "next start",
     "postinstall": "prisma generate",
     "lint": "eslint .",

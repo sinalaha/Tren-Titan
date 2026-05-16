@@ -1,5 +1,9 @@
 import type { NextConfig } from "next";
 
+/** GitHub Actions static export for GitHub Pages (`NEXT_PUBLIC_*` reliably inlined during build). */
+const IS_STATIC_PAGES =
+  process.env.NEXT_PUBLIC_GITHUB_PAGES === "1" || process.env.NEXT_STATIC_EXPORT === "1";
+
 const securityHeaders = [
   { key: "X-DNS-Prefetch-Control", value: "on" },
   { key: "X-Frame-Options", value: "SAMEORIGIN" },
@@ -24,14 +28,33 @@ const securityHeaders = [
   }
 ];
 
+/** No trailing slash; empty means site root (`username.github.io` user site). */
+function basePathStatic(): string | undefined {
+  if (!IS_STATIC_PAGES) return undefined;
+  let bp = process.env.NEXT_PUBLIC_BASE_PATH?.trim() ?? "";
+  if (!bp || bp === "/") return undefined;
+  bp = bp.replace(/\/$/, "");
+  return bp.startsWith("/") ? bp : `/${bp}`;
+}
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   compress: true,
-  images: {
-    formats: ["image/avif", "image/webp"],
-    minimumCacheTTL: 60
-  },
+  ...(IS_STATIC_PAGES
+    ? {
+        output: "export",
+        trailingSlash: true,
+        basePath: basePathStatic(),
+        images: { unoptimized: true }
+      }
+    : {
+        images: {
+          formats: ["image/avif", "image/webp"],
+          minimumCacheTTL: 60
+        }
+      }),
   async redirects() {
+    if (IS_STATIC_PAGES) return [];
     return [
       { source: "/scan", destination: "/dashboard/nutrition/scan", permanent: false },
       { source: "/nutrition", destination: "/dashboard/nutrition/scan", permanent: false },
@@ -43,7 +66,7 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     const base = [{ source: "/(.*)", headers: securityHeaders }];
-    if (process.env.NODE_ENV === "production") {
+    if (process.env.NODE_ENV === "production" && !IS_STATIC_PAGES) {
       return [
         ...base,
         {

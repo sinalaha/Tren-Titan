@@ -1,0 +1,83 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+concurrency:
+  group: gh-pages-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+env:
+  NODE_VERSION: "22"
+  NEXT_STATIC_EXPORT: "1"
+  NEXT_PUBLIC_GITHUB_PAGES: "1"
+  DATABASE_URL: "postgresql://static:static@127.0.0.1:5432/gh_pages_placeholder"
+  AUTH_SECRET: "github-pages-export-build-secret-at-least-32-chars-long"
+  NEXTAUTH_SECRET: "github-pages-export-build-secret-at-least-32-chars-long"
+  GOOGLE_CLIENT_ID: "gh-pages-export-placeholder-id"
+  GOOGLE_CLIENT_SECRET: "gh-pages-export-placeholder-secret"
+  STRIPE_SECRET_KEY: "sk_test_placeholder"
+  STRIPE_WEBHOOK_SECRET: "whsec_placeholder"
+  STRIPE_PREMIUM_PRICE_ID: "price_placeholder"
+  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: "pk_test_placeholder"
+  STRIPE_PORTAL_RETURN_URL: "http://localhost:3000/settings"
+  OPENAI_API_KEY: "sk_placeholder"
+  ANTHROPIC_API_KEY: "sk_placeholder"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      # User site repo <owner>.github.io → root. Else project Pages: https://OWNER.github.io/REPO/
+      BASE_PATH_SEGMENT: ${{ github.event.repository.name == format('{0}.github.io', github.repository_owner) && '' || format('/{0}', github.event.repository.name) }}
+      PUBLIC_SITE_ORIGIN: ${{ github.event.repository.name == format('{0}.github.io', github.repository_owner) && format('https://{0}.github.io/', github.repository_owner) || format('https://{0}.github.io/{1}/', github.repository_owner, github.event.repository.name) }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Prisma validate
+        run: npm run db:validate
+
+      - name: Static export (scripts/github-pages-prepare.mjs + next build)
+        run: npm run build:pages
+        env:
+          NEXT_PUBLIC_BASE_PATH: ${{ env.BASE_PATH_SEGMENT }}
+          NEXT_PUBLIC_APP_URL: ${{ env.PUBLIC_SITE_ORIGIN }}
+          NEXTAUTH_URL: ${{ env.PUBLIC_SITE_ORIGIN }}
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

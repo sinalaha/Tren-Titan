@@ -15,7 +15,11 @@ interface RootLayoutProps {
 }
 
 export default async function RootLayout({ children }: RootLayoutProps) {
-  const session = await auth();
+  /** Static GitHub Pages build (no middleware / OAuth server). See `NEXT_PUBLIC_GITHUB_PAGES`. */
+  const session =
+    process.env.NEXT_PUBLIC_GITHUB_PAGES === "1" || process.env.NEXT_STATIC_EXPORT === "1"
+      ? null
+      : await auth();
 
   return (
     <html lang="ru">

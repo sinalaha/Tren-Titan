@@ -36,6 +36,9 @@ coverage/
 prisma/*.db
 prisma/*.db-journal
 
+# Static export stash (scripts/github-pages-prepare.mjs)
+.github-pages-stash/
+
 # Vercel
 .vercel
 
