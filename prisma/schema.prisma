@@ -1,0 +1,221 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  PREMIUM
+  ADMIN
+  SUPERADMIN
+}
+
+enum Goal {
+  FAT_LOSS
+  MUSCLE_GAIN
+  RECOMPOSITION
+  MAINTENANCE
+  STRENGTH
+}
+
+/** Focus for rotating daily missions (loss vs bulk). */
+enum DailyMissionsFocus {
+  FAT_LOSS
+  MUSCLE_GAIN
+}
+
+enum SubscriptionStatus {
+  FREE
+  TRIAL
+  ACTIVE
+  CANCELLED
+  PAST_DUE
+}
+
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  emailVerified     DateTime?
+  name              String?
+  image             String?
+  passwordHash      String?
+  role              Role      @default(USER)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  profile           Profile?
+  workouts          Workout[]
+  nutritionLogs     NutritionLog[]
+  waterLogs         WaterLog[]
+  aiRecommendations AIRecommendation[]
+  subscription      Subscription?
+  achievements      Achievement[]
+  streaks           Streak?
+  sessions          Session[]
+  accounts          Account[]
+}
+
+model Profile {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  height         Float?
+  weight         Float?
+  targetWeight   Float?
+  age            Int?
+  gender         String?
+  bodyFatPct     Float?
+  goal               Goal               @default(MAINTENANCE)
+  dailyMissionsFocus DailyMissionsFocus @default(FAT_LOSS)
+  trainingFreq   Int?
+  sleepHours     Float?
+  stressLevel    Int?
+  onboardingDone Boolean  @default(false)
+  updatedAt      DateTime @updatedAt
+}
+
+model Workout {
+  id          String      @id @default(cuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String?
+  date        DateTime    @default(now())
+  notes       String?
+  rpe         Int?
+  durationMin Int?
+  exercises   WorkoutSet[]
+  createdAt   DateTime    @default(now())
+
+  @@index([userId, date])
+}
+
+model WorkoutSet {
+  id          String  @id @default(cuid())
+  workoutId   String
+  workout     Workout @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  exercise    String
+  muscleGroup String
+  setNumber   Int
+  reps        Int?
+  weight      Float?
+  rpe         Int?
+  tempo       String?
+  restSec     Int?
+  isWarmup    Boolean @default(false)
+}
+
+model NutritionLog {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date         DateTime @default(now())
+  mealType     String?
+  name         String?
+  imageUrl     String?
+  calories     Float
+  protein      Float
+  fats         Float
+  carbs        Float
+  fiber        Float?
+  aiConfidence Float?
+  isManual     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  @@index([userId, date])
+}
+
+model WaterLog {
+  id       String   @id @default(cuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date     DateTime @default(now())
+  amountMl Int
+
+  @@index([userId, date])
+}
+
+model AIRecommendation {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        String
+  content     String
+  metadata    Json?
+  isRead      Boolean  @default(false)
+  generatedAt DateTime @default(now())
+
+  @@index([userId, generatedAt])
+}
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  userId               String             @unique
+  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stripeCustomerId     String?            @unique
+  stripeSubscriptionId String?            @unique
+  plan                 String             @default("free")
+  status               SubscriptionStatus @default(FREE)
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean            @default(false)
+  aiScansUsed          Int                @default(0)
+  aiScansLimit         Int                @default(10)
+  updatedAt            DateTime           @updatedAt
+}
+
+model Achievement {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type       String
+  unlockedAt DateTime @default(now())
+
+  @@unique([userId, type])
+}
+
+model Streak {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currentStreak Int      @default(0)
+  longestStreak Int      @default(0)
+  lastActivity  DateTime?
+  xp            Int      @default(0)
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}

@@ -1,0 +1,206 @@
+name: pr-template-guard
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+jobs:
+  validate-pr-template:
+    runs-on: ubuntu-latest
+
+    permissions:
+      pull-requests: read
+
+    steps:
+      - name: Validate required PR sections
+
+        uses: actions/github-script@v7
+
+        with:
+          script: |
+
+            const body = context.payload.pull_request?.body ?? "";
+
+
+
+            function sectionText(heading) {
+
+              const esc = heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+              const re = new RegExp(`##\\s+${esc}\\s*\\r?\\n([\\s\\S]*?)(?=\\r?\\n##\\s+|$)`, "i");
+
+              const m = body.match(re);
+
+              return m ? m[1].trim() : null;
+
+            }
+
+
+
+            function subsection(parent, title) {
+
+              if (!parent) return null;
+
+              const esc = title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+              const re = new RegExp(
+
+                `###\\s+${esc}\\s*\\r?\\n([\\s\\S]*?)(?=\\r?\\n###|\\r?\\n##|$)`,
+
+                "i"
+
+              );
+
+              const m = parent.match(re);
+
+              return m ? m[1].trim() : null;
+
+            }
+
+
+
+            function meaningfulContent(block) {
+
+              if (!block) return false;
+
+              const lines = block
+
+                .split(/\r?\n/)
+
+                .map((l) => l.trim())
+
+                .filter(Boolean);
+
+              for (const line of lines) {
+
+                const bullet = /^[-*]\s+(.+)$/.exec(line);
+
+                const raw = (bullet ? bullet[1] : line).trim();
+
+                const stripped = raw.replace(/^`+|`+$/g, "").trim();
+
+                if (!stripped || /^(n\/a|na|none|—|-)$/i.test(stripped)) continue;
+
+                if (/^\[[ xX]\]\s*$/.test(stripped)) continue;
+
+                if (/^\[\s*\]/.test(raw)) continue;
+
+                return true;
+
+              }
+
+              return false;
+
+            }
+
+
+
+            const failures = [];
+
+
+
+            const migration = sectionText("Database / Migration");
+
+            if (!migration) {
+
+              failures.push("Missing section: `## Database / Migration`.");
+
+            } else {
+
+              const checked = /\[(x|X)\]/.test(migration);
+
+              const commands = subsection(migration, "Migration commands used");
+
+              const tables = subsection(migration, "Affected tables / models");
+
+              if (!checked) failures.push("Mark at least one `[x]` checkbox in `Database / Migration`.");
+
+              if (!meaningfulContent(commands))
+
+                failures.push(
+
+                  "Fill `### Migration commands used` with real commands (bullets or text), not placeholders."
+
+                );
+
+              if (!meaningfulContent(tables))
+
+                failures.push(
+
+                  "Fill `### Affected tables / models` with table/model names, not placeholders."
+
+                );
+
+            }
+
+
+
+            const testPlan = sectionText("Test Plan");
+
+            if (!testPlan) {
+
+              failures.push("Missing section: `## Test Plan`.");
+
+            } else {
+
+              const checked = /\[(x|X)\]/.test(testPlan);
+
+              const evidence = subsection(testPlan, "Evidence / execution notes");
+
+              if (!checked)
+
+                failures.push("Check at least one test item (mark `[x]`) in `## Test Plan`.");
+
+              if (!meaningfulContent(evidence))
+
+                failures.push("Fill `### Evidence / execution notes` with what ran and the outcome.");
+
+            }
+
+
+
+            const rollback = sectionText("Rollback Note");
+
+            if (!rollback) {
+
+              failures.push("Missing section: `## Rollback Note`.");
+
+            } else {
+
+              const method = subsection(rollback, "Safe rollback method");
+
+              const post = subsection(rollback, "Post-rollback validation");
+
+              if (!meaningfulContent(method))
+
+                failures.push(
+
+                  "Fill `### Safe rollback method` with the concrete rollback steps (deploy revert, migration, etc.)."
+
+                );
+
+              if (!meaningfulContent(post))
+
+                failures.push(
+
+                  "Fill `### Post-rollback validation` with checks after rollback (health, smoke paths)."
+
+                );
+
+            }
+
+
+
+            if (failures.length > 0) {
+
+              core.setFailed(
+
+                "PR template requirements are not satisfied:\n- " + failures.join("\n- ")
+
+              );
+
+            } else {
+
+              core.info("PR template guard passed.");
+
+            }

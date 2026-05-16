@@ -1,0 +1,22 @@
+:root {
+  --bg-void: #000000;
+  --bg-space: #050508;
+  --bg-deep: #0a0a12;
+  --bg-surface: #0f0f1a;
+  --bg-card: rgba(255, 255, 255, 0.03);
+  --bg-card-hover: rgba(255, 255, 255, 0.06);
+
+  --neon-blue: #00d4ff;
+  --neon-purple: #a855f7;
+  --neon-crimson: #ff2d55;
+  --neon-cyan: #00ffe7;
+  --neon-gold: #ffd700;
+  --neon-green: #39ff14;
+
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.6);
+  --text-muted: rgba(255, 255, 255, 0.3);
+
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-glow: rgba(0, 212, 255, 0.3);
+}
