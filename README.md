@@ -128,7 +128,7 @@ npm run build
 
 ## GitHub Pages
 
-This app is full-stack (API routes, Auth.js, Prisma). **GitHub Pages only hosts the static export**: a small public shell (/, /login, /register, legal). The workflow [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) runs `npm run build:pages` (see `scripts/github-pages-prepare.mjs`), then publishes the `out/` directory via [GitHub Actions](https://docs.github.com/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site#publishing-with-a-custom-github-actions-workflow).
+This app is full-stack (API routes, Auth.js, Prisma). **GitHub Pages only hosts the static export**: a small public shell (/, /login, /register, legal). On push to `main`, [.github/workflows/ci.yml](.github/workflows/ci.yml) runs `npm run build:pages` (see `scripts/github-pages-prepare.mjs`), then publishes the `out/` directory via [GitHub Actions](https://docs.github.com/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site#publishing-with-a-custom-github-actions-workflow).
 
 Enable **Settings → Pages → Build and deployment → Source: GitHub Actions** on the repository.
 
@@ -148,7 +148,7 @@ The repo includes [vercel.json](vercel.json) with `prisma generate && next build
 
 ## GitHub Actions
 
-[.github/workflows/ci.yml](.github/workflows/ci.yml): install → Prisma validate → **lint** → **format check** → **typecheck** → **unit tests** → **production build**; optional Playwright e2e with Postgres service.
+[.github/workflows/ci.yml](.github/workflows/ci.yml): on **`main`** only — **`build`** (`npm ci` + static **`npm run build:pages`**) → **`deploy`** to GitHub Pages. Run **`npm run ci:check`** locally for lint / typecheck / tests before pushing.
 
 ## Operations
 
