@@ -28,7 +28,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.52.0",
+    "@anthropic-ai/sdk": "^0.96.0",
     "@auth/prisma-adapter": "^2.7.2",
     "@prisma/client": "^6.8.2",
     "@react-three/fiber": "^9.1.2",
