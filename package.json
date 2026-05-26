@@ -57,7 +57,7 @@
     "@eslint/eslintrc": "^3.3.1",
     "@playwright/test": "^1.51.1",
     "@tailwindcss/postcss": "^4.3.0",
-    "@tanstack/react-query-devtools": "^5.75.7",
+    "@tanstack/react-query-devtools": "^5.100.10",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.15.0",
     "@types/react": "^19.1.2",
